@@ -6,42 +6,50 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { CountryMultiSelect } from '@/components/CountryMultiSelect'
 import { useAuth } from '@/hooks/useAuth'
-import { savePendingSearch, getSessionId } from '@/services/pendingSearch'
 
 export function LandingPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   
-  // LER DO LOCALSTORAGE
-  const [molecule, setMolecule] = useState(() => {
-    return localStorage.getItem('lastSearch_molecule') || ''
-  })
-  const [brand, setBrand] = useState(() => {
-    return localStorage.getItem('lastSearch_brand') || ''
-  })
-  const [countries, setCountries] = useState<string[]>(() => {
-    const saved = localStorage.getItem('lastSearch_countries')
-    return saved ? JSON.parse(saved) : ['BR']
-  })
-
-  // LIMPAR LOCALSTORAGE APÓS CARREGAR
+  // CARREGAR DO LOCALSTORAGE
+  const [molecule, setMolecule] = useState('')
+  const [brand, setBrand] = useState('')
+  const [countries, setCountries] = useState<string[]>(['BR'])
+  
+  // CARREGAR DADOS SALVOS
   useEffect(() => {
-    if (molecule && user) {
-      console.log('✅ [LANDING] Found saved search, auto-executing')
+    const savedMolecule = localStorage.getItem('pendingSearch_molecule')
+    const savedBrand = localStorage.getItem('pendingSearch_brand')
+    const savedCountries = localStorage.getItem('pendingSearch_countries')
+    
+    if (savedMolecule) {
+      console.log('✅ [LANDING] Loading saved search from localStorage')
+      setMolecule(savedMolecule)
+      setBrand(savedBrand || '')
+      setCountries(savedCountries ? JSON.parse(savedCountries) : ['BR'])
       
-      // Limpar
-      localStorage.removeItem('lastSearch_molecule')
-      localStorage.removeItem('lastSearch_brand')
-      localStorage.removeItem('lastSearch_countries')
-      
-      // Executar
-      setTimeout(() => {
-        navigate('/search', {
-          state: { molecule, brand, countries }
-        })
-      }, 500)
+      // Se user logado, executar automaticamente
+      if (user) {
+        console.log('🚀 [LANDING] User logged in, auto-executing saved search')
+        
+        // Limpar localStorage
+        localStorage.removeItem('pendingSearch_molecule')
+        localStorage.removeItem('pendingSearch_brand')
+        localStorage.removeItem('pendingSearch_countries')
+        
+        // Executar busca
+        setTimeout(() => {
+          navigate('/search', {
+            state: {
+              molecule: savedMolecule,
+              brand: savedBrand || '',
+              countries: savedCountries ? JSON.parse(savedCountries) : ['BR']
+            }
+          })
+        }, 500)
+      }
     }
-  }, [user])
+  }, [user, navigate])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,25 +60,24 @@ export function LandingPage() {
     }
 
     // SALVAR NO LOCALSTORAGE
-    localStorage.setItem('lastSearch_molecule', molecule.trim())
-    localStorage.setItem('lastSearch_brand', brand.trim())
-    localStorage.setItem('lastSearch_countries', JSON.stringify(countries))
+    localStorage.setItem('pendingSearch_molecule', molecule.trim())
+    localStorage.setItem('pendingSearch_brand', brand.trim())
+    localStorage.setItem('pendingSearch_countries', JSON.stringify(countries))
+    
+    console.log('💾 [LANDING] Saved search to localStorage')
 
     if (!user) {
-      console.log('⚠️ User NOT logged in - saving and redirecting')
-      
-      const sessionId = getSessionId()
-      savePendingSearch(sessionId, {
-        molecule: molecule.trim(),
-        brand: brand.trim(),
-        countries: countries
-      })
-      
+      console.log('⚠️ [LANDING] User not logged in, redirecting to login')
       navigate('/login')
       return
     }
 
-    console.log('✅ User logged in, navigating to /search')
+    console.log('✅ [LANDING] User logged in, executing search')
+    
+    // Limpar localStorage
+    localStorage.removeItem('pendingSearch_molecule')
+    localStorage.removeItem('pendingSearch_brand')
+    localStorage.removeItem('pendingSearch_countries')
     
     navigate('/search', { 
       state: { 
