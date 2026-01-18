@@ -20,8 +20,12 @@ export function LandingPage() {
   
   // VERIFICAR FIRESTORE QUANDO USER CARREGA
   useEffect(() => {
+    console.log('🔄 [LANDING] useEffect triggered, user:', user?.email || 'null')
+    
     if (user) {
       checkFirestoreAndAutoExecute()
+    } else {
+      console.log('⏳ [LANDING] Waiting for user to load...')
     }
   }, [user])
   
