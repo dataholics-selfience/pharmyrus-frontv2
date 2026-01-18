@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, Loader2 } from 'lucide-react'
-import { getPendingSearch, clearPendingSearch, getSessionId } from '@/services/pendingSearch'
 
 /**
  * Login Page
@@ -29,26 +27,6 @@ export function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      
-      // SALVAR BUSCA NO FIRESTORE DO USUÁRIO
-      const sessionId = getSessionId()
-      const pendingSearch = await getPendingSearch(sessionId)
-      
-      if (pendingSearch) {
-        console.log('💾 [LOGIN] Saving search to user document')
-        
-        await setDoc(doc(db, 'users', auth.currentUser!.uid), {
-          pendingSearch: {
-            molecule: pendingSearch.molecule,
-            brand: pendingSearch.brand,
-            countries: pendingSearch.countries,
-            timestamp: new Date()
-          }
-        }, { merge: true })
-        
-        // Limpar pending
-        await clearPendingSearch(sessionId)
-      }
       
       console.log('✅ [LOGIN] Redirecting to landing')
       navigate('/')

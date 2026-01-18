@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
 import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,63 +12,36 @@ export function LandingPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   
-  const [molecule, setMolecule] = useState('')
-  const [brand, setBrand] = useState('')
-  const [countries, setCountries] = useState<string[]>(['BR'])
-  
-  // VERIFICAR FIRESTORE QUANDO USER CARREGA
+  // LER DO LOCALSTORAGE
+  const [molecule, setMolecule] = useState(() => {
+    return localStorage.getItem('lastSearch_molecule') || ''
+  })
+  const [brand, setBrand] = useState(() => {
+    return localStorage.getItem('lastSearch_brand') || ''
+  })
+  const [countries, setCountries] = useState<string[]>(() => {
+    const saved = localStorage.getItem('lastSearch_countries')
+    return saved ? JSON.parse(saved) : ['BR']
+  })
+
+  // LIMPAR LOCALSTORAGE APÓS CARREGAR
   useEffect(() => {
-    console.log('🔄 [LANDING] useEffect triggered, user:', user?.email || 'null')
-    
-    if (user) {
-      checkFirestoreAndAutoExecute()
-    } else {
-      console.log('⏳ [LANDING] Waiting for user to load...')
+    if (molecule && user) {
+      console.log('✅ [LANDING] Found saved search, auto-executing')
+      
+      // Limpar
+      localStorage.removeItem('lastSearch_molecule')
+      localStorage.removeItem('lastSearch_brand')
+      localStorage.removeItem('lastSearch_countries')
+      
+      // Executar
+      setTimeout(() => {
+        navigate('/search', {
+          state: { molecule, brand, countries }
+        })
+      }, 500)
     }
   }, [user])
-  
-  const checkFirestoreAndAutoExecute = async () => {
-    try {
-      console.log('🔍 [LANDING] Checking Firestore for pending search')
-      
-      const userDoc = await getDoc(doc(db, 'users', user!.uid))
-      
-      if (!userDoc.exists()) {
-        console.log('⚠️ [LANDING] User doc not found')
-        return
-      }
-      
-      const userData = userDoc.data()
-      const pendingSearch = userData.pendingSearch
-      
-      if (!pendingSearch) {
-        console.log('ℹ️ [LANDING] No pending search in Firestore')
-        return
-      }
-      
-      console.log('✅ [LANDING] Found pending search:', pendingSearch)
-      
-      // LIMPAR pending search IMEDIATAMENTE para evitar loop
-      await setDoc(doc(db, 'users', user!.uid), {
-        pendingSearch: null,
-        lastExecutedAt: new Date()
-      }, { merge: true })
-      
-      console.log('🚀 [LANDING] Auto-executing search')
-      
-      // Executar busca
-      navigate('/search', {
-        state: {
-          molecule: pendingSearch.molecule,
-          brand: pendingSearch.brand || '',
-          countries: pendingSearch.countries
-        }
-      })
-      
-    } catch (error) {
-      console.error('[LANDING] Error checking Firestore:', error)
-    }
-  }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -80,9 +51,13 @@ export function LandingPage() {
       return
     }
 
-    // Se user NÃO logado → salvar e ir pro login
+    // SALVAR NO LOCALSTORAGE
+    localStorage.setItem('lastSearch_molecule', molecule.trim())
+    localStorage.setItem('lastSearch_brand', brand.trim())
+    localStorage.setItem('lastSearch_countries', JSON.stringify(countries))
+
     if (!user) {
-      console.log('⚠️ User NOT logged in - saving to Firestore and redirecting')
+      console.log('⚠️ User NOT logged in - saving and redirecting')
       
       const sessionId = getSessionId()
       savePendingSearch(sessionId, {
@@ -95,7 +70,6 @@ export function LandingPage() {
       return
     }
 
-    // Se user logado → executar busca
     console.log('✅ User logged in, navigating to /search')
     
     navigate('/search', { 

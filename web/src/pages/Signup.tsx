@@ -165,24 +165,7 @@ export function SignupPage() {
         await addNewCompany(company)
       }
       
-      // 6. SALVAR BUSCA NO FIRESTORE DO USUÁRIO
-      const sessionId = getSessionId()
-      const pendingSearch = await getPendingSearch(sessionId)
-      
-      if (pendingSearch) {
-        console.log('💾 [SIGNUP] Saving search to user document')
-        
-        // Salvar no documento do usuário
-        await setDoc(doc(db, 'users', user.uid), {
-          pendingSearch: {
-            molecule: pendingSearch.molecule,
-            brand: pendingSearch.brand,
-            countries: pendingSearch.countries,
-            timestamp: new Date()
-          }
-        }, { merge: true })
-      }
-      
+      // 6. Redirecionar para landing
       console.log('✅ [SIGNUP] Redirecting to landing')
       navigate('/')
       
