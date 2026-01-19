@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, Loader2, Check, X } from 'lucide-react'
-import { getPendingSearch, getSessionId } from '@/services/pendingSearch'
 import { 
   maskCPF, 
   maskPhone, 
