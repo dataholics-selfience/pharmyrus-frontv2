@@ -164,7 +164,9 @@ export function SignupPage() {
         await addNewCompany(company)
       }
       
-      // 6. Redirecionar para landing
+      // 6. Marcar que acabou de fazer signup
+      localStorage.setItem('justSignedUp', 'true')
+      
       console.log('✅ [SIGNUP] Redirecting to landing')
       navigate('/')
       

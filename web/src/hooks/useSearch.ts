@@ -32,7 +32,9 @@ export function useSearch() {
   const [result, setResult] = useState<SearchResult | null>(null)
 
   const executeSearch = useCallback(async (request: SearchRequest) => {
-    if (!user) {
+    const justSignedUp = localStorage.getItem('justSignedUp') === 'true'
+    
+    if (!user && !justSignedUp) {
       setError('Você precisa estar logado para fazer buscas')
       return
     }
@@ -61,15 +63,17 @@ export function useSearch() {
           setCurrentStep('Carregado do cache!')
           setLoading(false)
           
-          // Save to user history
-          await saveSearchToHistory(
-            user.uid,
-            `cached_${Date.now()}`,
-            request.molecule,
-            request.brand || '',
-            countries,
-            cachedResult.patent_discovery?.summary?.total_patents || 0
-          )
+          // Save to user history (só se tiver user)
+          if (user) {
+            await saveSearchToHistory(
+              user.uid,
+              `cached_${Date.now()}`,
+              request.molecule,
+              request.brand || '',
+              countries,
+              cachedResult.patent_discovery?.summary?.total_patents || 0
+            )
+          }
           
           return cachedResult
         }
@@ -106,15 +110,17 @@ export function useSearch() {
       console.log('💾 Saving to cache...')
       await saveToCacheFirestore(request.molecule, countries, result)
       
-      // 5. SAVE TO USER HISTORY
-      await saveSearchToHistory(
-        user.uid,
-        jobId,
-        request.molecule,
-        request.brand || '',
-        countries,
-        result.patent_discovery?.summary?.total_patents || 0
-      )
+      // 5. SAVE TO USER HISTORY (só se tiver user)
+      if (user) {
+        await saveSearchToHistory(
+          user.uid,
+          jobId,
+          request.molecule,
+          request.brand || '',
+          countries,
+          result.patent_discovery?.summary?.total_patents || 0
+        )
+      }
 
       return result
     } catch (err: any) {

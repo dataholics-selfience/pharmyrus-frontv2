@@ -29,16 +29,24 @@ export function SearchPage() {
   const countries = location.state?.countries || ['BR']
 
   useEffect(() => {
-    // Require login
-    if (!user) {
-      console.log('⚠️  User not logged in, redirecting')
+    // Permitir se user logado OU se acabou de fazer signup
+    const justSignedUp = localStorage.getItem('justSignedUp') === 'true'
+    
+    if (!user && !justSignedUp) {
+      console.log('⚠️ User not logged in, redirecting')
       navigate('/login')
       return
+    }
+    
+    // Limpar flag após usar
+    if (justSignedUp) {
+      console.log('✅ Just signed up, allowing search without auth state')
+      localStorage.removeItem('justSignedUp')
     }
 
     // Require molecule
     if (!molecule) {
-      console.log('⚠️  No molecule provided')
+      console.log('⚠️ No molecule provided')
       navigate('/')
       return
     }
